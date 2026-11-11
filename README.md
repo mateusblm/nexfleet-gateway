@@ -1,6 +1,6 @@
 # NexFleet — API Gateway
 
-Ponto de entrada HTTP do back-end do NexFleet, plataforma acadêmica de gestão de frotas (PJBL, PUCPR). Parte da v1.0.0; o sistema completo está no repositório guarda-chuva [nexfleet](https://github.com/mateusblm/nexfleet).
+Ponto de entrada HTTP do back-end do NexFleet, plataforma de gestão de frotas. Parte da v1.0.0; o sistema completo está no repositório guarda-chuva [nexfleet](https://github.com/mateusblm/nexfleet).
 
 ## Arquitetura
 
@@ -72,7 +72,7 @@ Imagem Docker: [`mateusblm/nexfleet-gateway:v1.0.0`](https://hub.docker.com/r/ma
 
 > **Partida a frio:** os Container Apps escalam a zero e o Azure SQL pausa sem uso. A primeira chamada após um período de inatividade pode levar de 1 a 2 minutos (ou responder 503/504); tente de novo em seguida.
 
-## Alunos
+## Equipe
 
 - Vinícius dos Reis Góes
 - Mateus Burlamaqui
