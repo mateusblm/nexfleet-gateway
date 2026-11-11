@@ -352,6 +352,33 @@ class GatewayHttpTest {
   }
 
   @Test
+  void roteiaExclusaoDefinitivaSomenteComDelete() throws Exception {
+    var esperado =
+        java.util.Map.of(
+            "/api/v1/veiculos/b176f1b1-bc54-4f22-9b2e-fb69469ab033/definitivo", 409,
+            "/api/v1/motoristas/3ce0bdb7-f1de-47c2-baa3-7b99e343650c/definitivo", 409,
+            "/api/v1/usuarios/e2f6b588-00cf-45bc-927e-c4a08647dfde/definitivo", 403);
+    for (var item : esperado.entrySet()) {
+      var request =
+          HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + item.getKey()))
+              .header("Authorization", "Bearer token-exclusao")
+              .DELETE()
+              .build();
+      var response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+      assertEquals(item.getValue(), response.statusCode(), item.getKey());
+      assertTrue(response.body().startsWith("DELETE|Bearer token-exclusao"), item.getKey());
+
+      // Outros métodos nessa rota não chegam ao BFF.
+      var get =
+          HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + item.getKey()))
+              .header("Authorization", "Bearer token-exclusao")
+              .build();
+      var negado = HttpClient.newHttpClient().send(get, HttpResponse.BodyHandlers.ofString());
+      assertFalse(negado.body().startsWith("GET|"), item.getKey());
+    }
+  }
+
+  @Test
   void roteiaDashboardPreservandoBearer() throws Exception {
     var request =
         HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/api/v1/dashboard"))

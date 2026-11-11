@@ -52,6 +52,17 @@ public class GatewayConfig {
             route ->
                 route.path("/api/v1/usuarios/*").and().method("GET", "PUT", "DELETE").uri(bffUrl))
         .route(
+            "bff-exclusao-definitiva",
+            route ->
+                route
+                    .path(
+                        "/api/v1/veiculos/*/definitivo",
+                        "/api/v1/motoristas/*/definitivo",
+                        "/api/v1/usuarios/*/definitivo")
+                    .and()
+                    .method("DELETE")
+                    .uri(bffUrl))
+        .route(
             "bff-login", route -> route.path("/api/v1/auth/login").and().method("POST").uri(bffUrl))
         .route("bff-me", route -> route.path("/api/v1/auth/me").and().method("GET").uri(bffUrl))
         .route(
@@ -96,6 +107,12 @@ public class GatewayConfig {
                     .pathMatchers(HttpMethod.POST, "/api/v1/motoristas")
                     .permitAll()
                     .pathMatchers(HttpMethod.PUT, "/api/v1/motoristas/*")
+                    .permitAll()
+                    .pathMatchers(
+                        HttpMethod.DELETE,
+                        "/api/v1/veiculos/*/definitivo",
+                        "/api/v1/motoristas/*/definitivo",
+                        "/api/v1/usuarios/*/definitivo")
                     .permitAll()
                     .pathMatchers(HttpMethod.GET, "/api/v1/vinculos")
                     .permitAll()
