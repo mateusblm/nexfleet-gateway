@@ -426,4 +426,45 @@ class GatewayHttpTest {
       assertFalse(negado.body().startsWith("POST|"), rota);
     }
   }
+
+  @Test
+  void roteiaConsultaEdicaoEExclusaoPorIdDeAbastecimentosEManutencoes() throws Exception {
+    for (String recurso : new String[] {"abastecimentos", "manutencoes"}) {
+      for (String method : new String[] {"GET", "PUT", "DELETE"}) {
+        String path = "/api/v1/" + recurso + "/1d4be0d1-4801-41e1-9c5f-9002b2fc6dcc";
+        var request =
+            HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path))
+                .header("Authorization", "Bearer token-operacoes")
+                .header("Content-Type", "application/json")
+                .method(method, HttpRequest.BodyPublishers.ofString("{}"))
+                .build();
+        var response =
+            HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+        assertEquals(422, response.statusCode(), method + " " + path);
+        assertEquals(method + "|Bearer token-operacoes|{}", response.body(), method + " " + path);
+      }
+    }
+  }
+
+  @Test
+  void recusaOperacoesSemTokenComNaoAutorizadoSemChegarAoBff() throws Exception {
+    for (String recurso : new String[] {"abastecimentos", "manutencoes"}) {
+      for (String method : new String[] {"GET", "POST", "PUT", "DELETE"}) {
+        String path =
+            "/api/v1/" + recurso
+                + (method.equals("PUT") || method.equals("DELETE") || method.equals("GET")
+                    ? "/1d4be0d1-4801-41e1-9c5f-9002b2fc6dcc"
+                    : "");
+        var request =
+            HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path))
+                .header("Content-Type", "application/json")
+                .method(method, HttpRequest.BodyPublishers.ofString("{}"))
+                .build();
+        var response =
+            HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+        assertEquals(401, response.statusCode(), method + " " + path);
+        assertFalse(response.body().startsWith(method + "|"), method + " " + path);
+      }
+    }
+  }
 }
