@@ -35,6 +35,7 @@ flowchart LR
 
 - Roteamento explícito, por caminho **e** método HTTP, de cada rota pública `/api/v1/...` para o BFF; rotas fora da lista (como as APIs internas `/api/v1/frota/...`) não são expostas.
 - Cabeçalho `Authorization` e corpo preservados até o BFF, que valida o JWT.
+- Rotas de abastecimentos e manutenções (`/api/v1/abastecimentos/**` e `/api/v1/manutencoes/**`, com `GET`, `POST`, `PUT` e `DELETE`) exigem `Authorization: Bearer`: sem o cabeçalho, a resposta é `401` já no Gateway.
 - `GET /aggregated-data` e `GET /api/v1/aggregated-data` encaminhados ao BFF.
 - Swagger UI única em `/swagger-ui.html`, com seletor entre BFF, Frota, Operações, Identidade e Indicadores; cada OpenAPI é lido de `/docs/<serviço>/v3/api-docs`.
 - Geração ou propagação do cabeçalho `X-Correlation-ID` em todas as requisições.
@@ -70,8 +71,10 @@ Todas as rotas `/api/v1/...` e `/aggregated-data` são encaminhadas ao BFF, que 
 | `DELETE` | `/api/v1/{veiculos,motoristas,usuarios}/{id}/definitivo` | Exclusão definitiva |
 | `GET`, `POST` | `/api/v1/vinculos` | Listar e criar vínculos motorista ↔ veículo |
 | `PUT` | `/api/v1/vinculos/{id}/encerramento` | Encerrar vínculo |
-| `GET`, `POST` | `/api/v1/abastecimentos` | Listar e registrar abastecimentos |
-| `GET`, `POST` | `/api/v1/manutencoes` | Listar e registrar manutenções |
+| `GET`, `POST` | `/api/v1/abastecimentos` | Listar e registrar abastecimentos (Bearer exigido) |
+| `GET`, `PUT`, `DELETE` | `/api/v1/abastecimentos/{id}` | Consultar, editar e excluir abastecimento (Bearer exigido) |
+| `GET`, `POST` | `/api/v1/manutencoes` | Listar e registrar manutenções (Bearer exigido) |
+| `GET`, `PUT`, `DELETE` | `/api/v1/manutencoes/{id}` | Consultar, editar e excluir manutenção (Bearer exigido) |
 | `GET` | `/api/v1/dashboard` | Painel de custos e situação da frota |
 | `GET` | `/aggregated-data`, `/api/v1/aggregated-data` | Visão consolidada (Frota + Operações + eficiência) |
 | `GET` | `/swagger-ui.html` | Swagger UI única (pública) |
@@ -117,7 +120,7 @@ docker run --rm -p 8080:8080 \
   -e FROTA_URL=http://<host-da-frota>:8080 \
   -e OPERACOES_URL=http://<host-de-operacoes>:8080 \
   -e INDICADORES_URL=http://<host-de-indicadores>:8080 \
-  mateusblm/nexfleet-gateway:v1.0.0
+  mateusblm/nexfleet-gateway:v1.1.0
 ```
 
 Para gerar a imagem a partir do código: `docker build -t mateusblm/nexfleet-gateway:local .`
