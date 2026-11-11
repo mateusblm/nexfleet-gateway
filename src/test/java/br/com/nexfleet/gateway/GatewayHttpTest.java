@@ -155,6 +155,23 @@ class GatewayHttpTest {
               output.write(body);
             }
           });
+      for (String agregado : new String[] {"/aggregated-data", "/api/v1/aggregated-data"}) {
+        server.createContext(
+            agregado,
+            exchange -> {
+              String echo =
+                  exchange.getRequestMethod()
+                      + "|"
+                      + exchange.getRequestURI().getPath()
+                      + "|"
+                      + exchange.getRequestHeaders().getFirst("Authorization");
+              byte[] body = echo.getBytes(StandardCharsets.UTF_8);
+              exchange.sendResponseHeaders(200, body.length);
+              try (var output = exchange.getResponseBody()) {
+                output.write(body);
+              }
+            });
+      }
       return server;
     } catch (IOException exception) {
       throw new IllegalStateException(exception);
@@ -387,5 +404,26 @@ class GatewayHttpTest {
     var response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
     assertEquals(200, response.statusCode());
     assertEquals("GET|Bearer token-dashboard", response.body());
+  }
+
+  @Test
+  void roteiaVisaoConsolidadaNasDuasRotasPreservandoBearer() throws Exception {
+    for (String rota : java.util.List.of("/aggregated-data", "/api/v1/aggregated-data")) {
+      var request =
+          HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + rota))
+              .header("Authorization", "Bearer token-agregado")
+              .build();
+      var response =
+          HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+      assertEquals(200, response.statusCode(), rota);
+      assertEquals("GET|" + rota + "|Bearer token-agregado", response.body());
+
+      var post =
+          HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + rota))
+              .POST(HttpRequest.BodyPublishers.noBody())
+              .build();
+      var negado = HttpClient.newHttpClient().send(post, HttpResponse.BodyHandlers.ofString());
+      assertFalse(negado.body().startsWith("POST|"), rota);
+    }
   }
 }
