@@ -6,7 +6,13 @@ import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authorization.AuthorizationDecision;
+import org.springframework.security.authorization.AuthorizationResult;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.web.server.authorization.AuthorizationContext;
+import reactor.core.publisher.Mono;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 
@@ -42,7 +48,12 @@ public class GatewayConfig {
     return rotas
         .route(
             "bff-manutencoes",
-            route -> route.path("/api/v1/manutencoes").and().method("GET", "POST").uri(bffUrl))
+            route ->
+                route
+                    .path("/api/v1/manutencoes/**")
+                    .and()
+                    .method("GET", "POST", "PUT", "DELETE")
+                    .uri(bffUrl))
         .route(
             "bff-dashboard",
             route -> route.path("/api/v1/dashboard").and().method("GET").uri(bffUrl))
@@ -56,7 +67,12 @@ public class GatewayConfig {
                     .uri(bffUrl))
         .route(
             "bff-abastecimentos",
-            route -> route.path("/api/v1/abastecimentos").and().method("GET", "POST").uri(bffUrl))
+            route ->
+                route
+                    .path("/api/v1/abastecimentos/**")
+                    .and()
+                    .method("GET", "POST", "PUT", "DELETE")
+                    .uri(bffUrl))
         .route(
             "bff-vinculos-lista",
             route -> route.path("/api/v1/vinculos").and().method("GET", "POST").uri(bffUrl))
@@ -162,14 +178,9 @@ public class GatewayConfig {
                     .permitAll()
                     .pathMatchers(HttpMethod.PUT, "/api/v1/vinculos/*/encerramento")
                     .permitAll()
-                    .pathMatchers(HttpMethod.GET, "/api/v1/abastecimentos")
-                    .permitAll()
-                    .pathMatchers(HttpMethod.POST, "/api/v1/abastecimentos")
-                    .permitAll()
-                    .pathMatchers(HttpMethod.GET, "/api/v1/manutencoes")
-                    .permitAll()
-                    .pathMatchers(HttpMethod.POST, "/api/v1/manutencoes")
-                    .permitAll()
+                    // Operações: sem Bearer, 401 já no Gateway; o JWT é validado pelo BFF.
+                    .pathMatchers("/api/v1/abastecimentos/**", "/api/v1/manutencoes/**")
+                    .access(GatewayConfig::comBearer)
                     .pathMatchers(HttpMethod.GET, "/api/v1/dashboard")
                     .permitAll()
                     // JWT validado pelo BFF, como nas demais rotas de negócio.
@@ -178,5 +189,13 @@ public class GatewayConfig {
                     .anyExchange()
                     .denyAll())
         .build();
+  }
+
+  private static Mono<AuthorizationResult> comBearer(
+      Mono<Authentication> autenticacao, AuthorizationContext contexto) {
+    String valor =
+        contexto.getExchange().getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+    return Mono.just(
+        new AuthorizationDecision(valor != null && valor.matches("Bearer [^\\s]+")));
   }
 }
