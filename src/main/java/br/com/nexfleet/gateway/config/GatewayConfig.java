@@ -22,6 +22,14 @@ public class GatewayConfig {
             "bff-dashboard",
             route -> route.path("/api/v1/dashboard").and().method("GET").uri(bffUrl))
         .route(
+            "bff-aggregated-data",
+            route ->
+                route
+                    .path("/api/v1/aggregated-data", "/aggregated-data")
+                    .and()
+                    .method("GET")
+                    .uri(bffUrl))
+        .route(
             "bff-abastecimentos",
             route -> route.path("/api/v1/abastecimentos").and().method("GET", "POST").uri(bffUrl))
         .route(
@@ -129,6 +137,9 @@ public class GatewayConfig {
                     .pathMatchers(HttpMethod.POST, "/api/v1/manutencoes")
                     .permitAll()
                     .pathMatchers(HttpMethod.GET, "/api/v1/dashboard")
+                    .permitAll()
+                    // JWT validado pelo BFF, como nas demais rotas de negócio.
+                    .pathMatchers(HttpMethod.GET, "/api/v1/aggregated-data", "/aggregated-data")
                     .permitAll()
                     .anyExchange()
                     .denyAll())
