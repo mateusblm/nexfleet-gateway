@@ -1,5 +1,6 @@
 package br.com.nexfleet.gateway.config;
 
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
@@ -12,9 +13,33 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 @Configuration
 public class GatewayConfig {
   @Bean
-  RouteLocator routes(RouteLocatorBuilder builder, @Value("${bff.url}") String bffUrl) {
-    return builder
-        .routes()
+  RouteLocator routes(
+      RouteLocatorBuilder builder,
+      @Value("${bff.url}") String bffUrl,
+      @Value("${identidade.url}") String identidadeUrl,
+      @Value("${frota.url}") String frotaUrl,
+      @Value("${operacoes.url}") String operacoesUrl,
+      @Value("${indicadores.url}") String indicadoresUrl) {
+    var rotas = builder.routes();
+    // Swagger UI: /docs/<svc>/v3/api-docs entrega somente o OpenAPI de cada serviço.
+    Map.of(
+            "bff", bffUrl,
+            "identidade", identidadeUrl,
+            "frota", frotaUrl,
+            "operacoes", operacoesUrl,
+            "indicadores", indicadoresUrl)
+        .forEach(
+            (servico, url) ->
+                rotas.route(
+                    "docs-" + servico,
+                    route ->
+                        route
+                            .path("/docs/" + servico + "/v3/api-docs")
+                            .and()
+                            .method("GET")
+                            .filters(filtro -> filtro.setPath("/v3/api-docs"))
+                            .uri(url)));
+    return rotas
         .route(
             "bff-manutencoes",
             route -> route.path("/api/v1/manutencoes").and().method("GET", "POST").uri(bffUrl))
@@ -89,6 +114,15 @@ public class GatewayConfig {
                         "/actuator/health/**",
                         "/actuator/prometheus",
                         "/api/v1/ambiente")
+                    .permitAll()
+                    // Documentação pública (Swagger UI e OpenAPI); as operações seguem com JWT.
+                    .pathMatchers(
+                        HttpMethod.GET,
+                        "/swagger-ui.html",
+                        "/swagger-ui/**",
+                        "/v3/api-docs/**",
+                        "/docs/**",
+                        "/webjars/**")
                     .permitAll()
                     .pathMatchers(HttpMethod.POST, "/api/v1/auth/login")
                     .permitAll()
